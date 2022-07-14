@@ -3,7 +3,11 @@ const fs = require("fs");
 
 (async () => {
   try {
-    const browser = await puppeteer.launch({ headless: false });
+    const browser = await puppeteer.launch({
+      // args: ["--no-sandbox", "--proxy-server=110.170.126.13:3128"],
+      headless: false,
+      ignoreHTTPSErrors: true,
+    });
     const page = await browser.newPage();
     await page.goto("https://food.grab.com/sg/en/", {
       waitUntil: "networkidle2",
@@ -15,6 +19,9 @@ const fs = require("fs");
       try {
         // To capture all requests
         const url = response.url();
+
+        // await page.click("button.ant-btn");
+        // console.log(await page.title());
 
         //  put the required URL which contains the data
         if (
@@ -42,12 +49,9 @@ const fs = require("fs");
             data.push(obj);
           });
           console.table(data);
-          async function clickElement() {
-            await page.click("button.ant-btn");
-            console.log(await page.title());
-          }
-          clickElement();
+          await page.click("button.ant-btn");
         }
+
         fs.writeFile("./restaurants.json", JSON.stringify(data), (err) => {
           if (err) {
             console.error(err);
@@ -63,3 +67,4 @@ const fs = require("fs");
     console.log(error);
   }
 })();
+
