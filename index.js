@@ -1,40 +1,47 @@
 const puppeteer = require("puppeteer");
 const fs = require("fs");
 
-(async () => {
+const scrap = async () => {
   try {
-    const browser = await puppeteer.launch({
-      // args: ["--no-sandbox", "--proxy-server=110.170.126.13:3128"],
-      headless: false,
-      ignoreHTTPSErrors: true,
-    });
+    const browser = await puppeteer.launch({ headless: false });
     const page = await browser.newPage();
+
+    const navigationPromise = page.waitForNavigation({
+      waitUntil: "networkidle2",
+    });
+
     await page.goto("https://food.grab.com/sg/en/", {
       waitUntil: "networkidle2",
     });
 
+    await navigationPromise;
+
     let data = new Array(); // to store the data
+    const urlData = [];
 
     page.on("response", async (response) => {
       try {
-        // To capture all requests
+        // capture all the url requests
         const url = response.url();
 
-        // await page.click("button.ant-btn");
-        // console.log(await page.title());
+        urlData.push(url);
 
-        //  put the required URL which contains the data
+        await page.waitForSelector(".ant-btn");
+        await page.click(
+          "#page-content > div > div > div > div > div > button"
+        );
+
+        //  get the required url having the lat long
         if (
           url.includes(
             "https://portal.grab.com/foodweb/v2/search" ||
               "https://portal.grab.com/foodweb/v2/category"
           )
         ) {
-          // If URL matches
+          // if URL matches :
           const firstResponse = await page.waitForResponse(url);
 
-          // converting data into json data
-
+          // convert data into json
           const jsonResponse = await firstResponse.json();
 
           const restaurentsData = jsonResponse.searchResult.searchMerchants;
@@ -48,23 +55,23 @@ const fs = require("fs");
 
             data.push(obj);
           });
-          console.table(data);
-          await page.click("button.ant-btn");
-        }
 
-        fs.writeFile("./restaurants.json", JSON.stringify(data), (err) => {
-          if (err) {
-            console.error(err);
-            return;
-          }
-          // console.log("Great Success");
-        });
+          // console.table(data);
+          // gett the data into a json file
+          fs.writeFile("./restaurants.json", JSON.stringify(data), (err) => {
+            if (err) {
+              console.log(error);
+              return;
+            }
+            // console.log("Great Success")
+          });
+        }
       } catch (error) {
-        console.log(error);
+        console.log(error, "in first try catch block");
       }
     });
   } catch (error) {
     console.log(error);
   }
-})();
-
+};
+scrap();
